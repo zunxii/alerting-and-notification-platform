@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from app.api.v1 import alert_routes, user_routes
+from app.api.v1 import alert_routes, notification_routes, user_routes
 from app.core.config import config
 
 app = FastAPI(
@@ -19,6 +19,7 @@ app = FastAPI(
 # Include API routers
 app.include_router(alert_routes.router, prefix="/api/v1/alerts", tags=["Alerts"])
 app.include_router(user_routes.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(notification_routes.router)
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
