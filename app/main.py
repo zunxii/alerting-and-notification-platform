@@ -23,8 +23,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     contact={
-        "name": "Your Name / Team",
-        "email": "support@example.com",
+        "name": "Junaid ",
+        "email": "zunxii.2210@gmail.com",
     },
     license_info={
         "name": "MIT",
