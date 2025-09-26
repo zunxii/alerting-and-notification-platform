@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from app.api.v1 import alert_routes, notification_routes, user_routes
+from app.api.v1.admin import admin_alert_routes, admin_user_routes, admin_team_routes
+from app.api.v1.user import user_alert_routes, user_notification_routes
 from app.core.config import config
 
 app = FastAPI(
@@ -8,18 +9,22 @@ app = FastAPI(
     description="API platform to create, manage, and deliver alerts to users.",
     version="1.0.0",
     contact={
-        "name": "Your Name / Team",
-        "email": "support@example.com",
+        "name": "Junaid",
+        "email": "zunxii.2210@gmail.com",
     },
     license_info={
         "name": "MIT",
     },
 )
 
-# Include API routers
-app.include_router(alert_routes.router, prefix="/api/v1/alerts", tags=["Alerts"])
-app.include_router(user_routes.router, prefix="/api/v1/users", tags=["Users"])
-app.include_router(notification_routes.router)
+# Include Admin API routers
+app.include_router(admin_alert_routes.router, prefix="/api/v1/admin", tags=["Admin - Alerts"])
+app.include_router(admin_user_routes.router, prefix="/api/v1/admin", tags=["Admin - Users"])
+app.include_router(admin_team_routes.router, prefix="/api/v1/admin", tags=["Admin - Teams"])
+
+# Include User API routers
+app.include_router(user_alert_routes.router, prefix="/api/v1/user", tags=["User - Alerts"])
+app.include_router(user_notification_routes.router, prefix="/api/v1/user", tags=["User - Notifications"])
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

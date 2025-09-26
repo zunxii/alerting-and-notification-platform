@@ -76,3 +76,8 @@ class UserPreferenceRepository:
         if not pref or not pref.snoozed_date:
             return False
         return pref.snoozed_date == date.today()
+    
+    def get_all_preferences_by_snooze_date(self, snooze_date):
+        return self.db.query(UserAlertPreference).filter(
+            UserAlertPreference.snoozed_date == snooze_date
+        ).all()

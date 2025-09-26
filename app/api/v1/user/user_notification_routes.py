@@ -11,8 +11,7 @@ from app.channels.in_app import InAppChannel
 from app.channels.email import EmailChannel
 from app.channels.sms import SMSChannel
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
-
+router = APIRouter(prefix="/notifications")
 
 def get_notification_service(db: Session = Depends(get_db)):
     """Dependency to create NotificationService with repositories and default channels."""
@@ -22,21 +21,75 @@ def get_notification_service(db: Session = Depends(get_db)):
     user_repo = UserRepository(db)
     
     # For MVP: only In-App channel
-    # Future: can be configurable based on alert settings or user preferences
     channels = [InAppChannel()]
     
     return NotificationService(delivery_repo, pref_repo, alert_repo, user_repo, channels)
 
+@router.get("/deliveries/{user_id}")
+def get_user_deliveries(user_id: str, db: Session = Depends(get_db)):
+    """Get all notification deliveries for a user (End User)"""
+    user_repo = UserRepository(db)
+    delivery_repo = DeliveryRepository(db)
+    
+    # Verify user exists
+    user = user_repo.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    deliveries = delivery_repo.get_user_deliveries(user_id)
+    unread_deliveries = delivery_repo.get_unread_deliveries(user_id)
+    
+    return {
+        "user_id": user_id,
+        "total_deliveries": len(deliveries),
+        "unread_count": len(unread_deliveries),
+        "deliveries": deliveries
+    }
 
-# Trigger reminders manually 
+@router.get("/deliveries/{user_id}/unread")
+def get_unread_deliveries(user_id: str, db: Session = Depends(get_db)):
+    """Get unread notification deliveries for a user (End User)"""
+    user_repo = UserRepository(db)
+    delivery_repo = DeliveryRepository(db)
+    
+    # Verify user exists
+    user = user_repo.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    unread_deliveries = delivery_repo.get_unread_deliveries(user_id)
+    
+    return {
+        "user_id": user_id,
+        "unread_count": len(unread_deliveries),
+        "unread_deliveries": unread_deliveries
+    }
+
+@router.post("/deliveries/{delivery_id}/read")
+def mark_delivery_as_read(delivery_id: str, db: Session = Depends(get_db)):
+    """Mark a specific notification delivery as read (End User)"""
+    delivery_repo = DeliveryRepository(db)
+    delivery = delivery_repo.mark_read(delivery_id)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found")
+    return {
+        "message": f"Delivery {delivery_id} marked as read",
+        "delivery": delivery
+    }
+
+# Legacy endpoints for backward compatibility 
 @router.post("/reminders")
 def trigger_reminders(service: NotificationService = Depends(get_notification_service)):
+    """Trigger reminders manually (for testing/admin use)"""
     return service.trigger_reminders()
 
-
-# Deliver one alert manually (Admin use/demo)
 @router.post("/alerts/{alert_id}/deliver/{user_id}")
-def deliver_alert(alert_id: str, user_id: str, service: NotificationService = Depends(get_notification_service)):
+def deliver_alert_to_user(
+    alert_id: str, 
+    user_id: str, 
+    service: NotificationService = Depends(get_notification_service)
+):
+    """Deliver specific alert to specific user manually (for testing/admin use)"""
     alert = service.alert_repo.get_alert_by_id(alert_id)
     user = service.user_repo.get_user(user_id)
 
@@ -45,10 +98,8 @@ def deliver_alert(alert_id: str, user_id: str, service: NotificationService = De
 
     return service.deliver(alert, user)
 
-
-# Deliver alert with specific channels (for testing/admin)
 @router.post("/alerts/{alert_id}/deliver/{user_id}/channels")
-def deliver_alert_with_channels(
+def deliver_alert_with_specific_channels(
     alert_id: str, 
     user_id: str, 
     channel_types: list[str],  # ["in_app", "email", "sms"]
@@ -81,17 +132,3 @@ def deliver_alert_with_channels(
         raise HTTPException(status_code=404, detail="Alert or User not found")
 
     return service.deliver(alert, user)
-
-
-# Snooze an alert for today
-@router.post("/alerts/{alert_id}/snooze/{user_id}")
-def snooze_alert(alert_id: str, user_id: str, db: Session = Depends(get_db)):
-    pref_repo = UserPreferenceRepository(db)
-    return pref_repo.snooze_alert_today(user_id, alert_id)
-
-
-# Mark a notification delivery as read
-@router.post("/deliveries/{delivery_id}/read")
-def mark_read(delivery_id: str, db: Session = Depends(get_db)):
-    delivery_repo = DeliveryRepository(db)
-    return delivery_repo.mark_read(delivery_id)
