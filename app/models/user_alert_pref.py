@@ -10,3 +10,7 @@ class UserAlertPreference(Base):
     alert_id = Column(UUID(as_uuid=True), ForeignKey("alerts.id"), nullable=False)
     snoozed_date = Column(Date, nullable=True)  # If snoozed, store date
     last_delivered_at = Column(DateTime, nullable=True)
+
+    def is_snoozed_today(self, user_id: str, alert_id: str):
+        from datetime import date
+        return self.snoozed_date == date.today() if self.snoozed_date else False

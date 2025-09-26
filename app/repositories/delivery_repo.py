@@ -40,3 +40,6 @@ class DeliveryRepository:
             NotificationDelivery.user_id == user_id,
             NotificationDelivery.read_at == None
         ).all()
+    
+    def get_all_deliveries(self):
+        return self.db.query(NotificationDelivery).all()

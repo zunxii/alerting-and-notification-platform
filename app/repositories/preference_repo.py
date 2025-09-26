@@ -81,3 +81,6 @@ class UserPreferenceRepository:
         return self.db.query(UserAlertPreference).filter(
             UserAlertPreference.snoozed_date == snooze_date
         ).all()
+    
+    def get_all_preferences(self):
+        return self.db.query(UserAlertPreference).all()
